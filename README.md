@@ -6,9 +6,9 @@ Running Docker as PID 1.  This is an experiment to see if I can build a system t
 
 **Currently I only have this running under KVM**.  VirtualBox support will come soon enough (well, unless I get distracted by other shiny objects and not do it...)
 ```
-wget ...
+wget https://github.com/ibuildthecloud/only-docker/releases/download/v0.0.1/only-docker.tar.gz
 tar xvzf docker-only.tar.gz
-./run.sh
+./dist/run.sh
 ```
 
 ## Idea
