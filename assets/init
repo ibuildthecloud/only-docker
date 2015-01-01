@@ -1,0 +1,52 @@
+#!/bin/sh
+set -e
+
+export PATH=/bin
+# Top secret option...
+export DOCKER_RAMDISK=true
+
+mknod /dev/sda b 8 0
+mknod /dev/ptmx c 5 2
+mknod /dev/urandom c 1 9
+mknod /dev/null c 1 3
+mknod /dev/tty c 5 0
+for i in 0 1 2 3 4 5 6 7 8 9 10; do
+    mknod /dev/tty${i} c 4 ${i}
+done
+
+#mkdir /etc
+mkdir /proc
+mkdir /sys
+mkdir /rw
+mkdir -p /var/lib/docker
+mkdir -p /var/run
+mkdir -p /dev/pts
+
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t tmpfs none /sys/fs/cgroup
+mount -t devpts devpts /dev/pts
+
+for i in perf_event net_cls freezer devices blkio memory cpuacct cpu cpuset; do
+    mkdir -p /sys/fs/cgroup/$i
+    mount -t cgroup -o $i none /sys/fs/cgroup/$i
+done
+
+if ! mount /dev/sda /var/lib/docker; then
+    echo "Running from memory, this won't be good..."
+    export IN_MEMORY=true
+    sleep 2
+fi
+
+modprobe overlay
+modprobe e1000
+
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
+
+if grep -q console /proc/cmdline; then
+    openvt -s /bin/sh
+    openvt /bin/console-container.sh
+else
+    openvt -s /bin/console-container.sh
+fi
+exec docker -d -D -s overlay
