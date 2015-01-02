@@ -43,10 +43,7 @@ modprobe e1000
 
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 
-if grep -q console /proc/cmdline; then
-    openvt -s /bin/sh
-    openvt /bin/console-container.sh
-else
-    openvt -s /bin/console-container.sh
-fi
+openvt /bin/sh
+openvt -s /bin/console-container.sh
+
 exec docker -d -D -s overlay

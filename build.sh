@@ -20,6 +20,6 @@ docker run -d --name od-build od /bin/true
 
 rm -rf dist
 mkdir -p dist/kvm
-docker cp od-build:/usr/src/only-docker/ dist
-cp kvm/run.sh dist
+docker cp od-build:/only-docker.iso dist
+cp kvm/run.sh dist/kvm
 gzip -dc kvm/empty-hd.img.gz > dist/kvm/empty-hd.img

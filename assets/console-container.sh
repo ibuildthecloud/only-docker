@@ -30,7 +30,7 @@ while true; do
     else
         docker run \
             --rm \
-            -v /proc:/host/proc:ro \
+            -v /:/root \
             -v /lib/modules:/lib/modules:ro \
             -v /bin/docker:/usr/bin/docker:ro \
             -v /var/run/docker.sock:/var/run/docker.sock:ro \

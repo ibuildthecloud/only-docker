@@ -4,12 +4,19 @@ Running Docker as PID 1.  This is an experiment to see if I can build a system t
 
 ## Running
 
-**Currently I only have this running under KVM**.  VirtualBox support will come soon enough (well, unless I get distracted by other shiny objects and not do it...)
+Currently I only have this running under KVM and VirtualBox.
+
+### KVM
+
+Download `only-docker.tar.gz` from [releases](https://github.com/ibuildthecloud/only-docker/releases)
 ```
-wget https://github.com/ibuildthecloud/only-docker/releases/download/v0.0.1/only-docker.tar.gz
 tar xvzf docker-only.tar.gz
-./dist/run.sh
+./dist/kvm/run.sh
 ```
+
+### VirtualBox
+
+Create a VM that boots from `dist/only-docker.iso`
 
 ## Idea
 
@@ -41,7 +48,23 @@ There are two main scripts: `init` and `console-container.sh`.  `init` is intend
 
 ## But I don't see Docker as PID 1?
 
-When the system boots and you get a console your in a container.  If you run `ps` you just see the container's processes.  It's actually hard to get into the root of the machine to see what's there.  If you want proof, change the kvm script and add `-append console` to it.  That will launch a shell in the root.
+When the system boots and you get a console your in a container.  If you run `ps` you just see the container's processes.  By default a console is spawned on VT2 (Alt-F2) that is in the host OS.  If you switch to that console and run ps you will see that Docker is PID 1.
+
+## Customizing
+
+The console container is launched using the image labeled `console-image:latest`.  If one does not exist `busybox` will be used if `/dev/sda` was not mounted, or `debian` if `/dev/sda` was mounted.  To use a different image just pull your custom image and then label it as `console-image:latest` and then exit out of your console.  A new container will be launched.
+
+## Adding storage
+
+By default this runs using only ram which makes start up slow and limits the amount of images you can pull.  If you want to add storage then add a formated disk as `/dev/sda` (not `/dev/sda1`, don't partition it, just format the raw disk).  The KVM script automatically attaches a formatted disk.  To format a disk in VirtualBox then just do the following after boot.
+
+```
+docker pull debian:latest
+docker tag debian:latest console-image:latest
+exit
+mke2fs -j /dev/sda
+```
+Now reboot the virtual machine.
 
 # License
 Copyright (c) 2014 [Rancher Labs, Inc.](http://rancher.com)

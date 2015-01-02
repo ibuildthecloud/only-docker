@@ -59,6 +59,11 @@ RUN /usr/src/root/bin/docker -s vfs -d --bridge none & \
     /usr/src/root/bin/docker run --name export busybox false ; \
     /usr/src/root/bin/docker export export > /usr/src/root/.dhcp.tar
 
+# Install isolinux
+RUN apt-get install -y \
+    isolinux \
+    xorriso
+
 # Start assembling root
 COPY assets/init /usr/src/root/
 COPY assets/console-container.sh /usr/src/root/bin/
@@ -66,6 +71,7 @@ RUN cd /usr/src/root/bin && \
     cp /bin/busybox . && \
     chmod u+s busybox && \
     cp /usr/src/iptables-1.4.21/iptables/xtables-multi iptables && \
+    strip --strip-all iptables && \
     for i in mount modprobe mkdir openvt sh mknod; do \
         ln -s busybox $i; \
     done && \
@@ -73,7 +79,21 @@ RUN cd /usr/src/root/bin && \
     mkdir -p ./etc/ssl/certs && \
     cp /etc/ssl/certs/ca-certificates.crt ./etc/ssl/certs && \
     ln -s bin sbin
-RUN mkdir /usr/src/only-docker && \
+RUN mkdir -p /usr/src/only-docker/boot && \
     cd /usr/src/root && \
-    find | cpio -H newc -o | gzip -c > ../only-docker/initrd && \
-    cp /usr/src/linux-3.18.1/arch/x86_64/boot/bzImage ../only-docker/vmlinuz
+    find | cpio -H newc -o | lzma -c > ../only-docker/boot/initrd && \
+    cp /usr/src/linux-3.18.1/arch/x86_64/boot/bzImage ../only-docker/boot/vmlinuz
+RUN mkdir -p /usr/src/only-docker/boot/isolinux && \
+    cp /usr/lib/ISOLINUX/isolinux.bin /usr/src/only-docker/boot/isolinux && \
+    cp /usr/lib/syslinux/modules/bios/ldlinux.c32 /usr/src/only-docker/boot/isolinux
+COPY assets/isolinux.cfg /usr/src/only-docker/boot/isolinux/
+# Copied from boot2docker, thanks.
+RUN cd /usr/src/only-docker && \
+    xorriso \
+        -publisher "Rancher Labs, Inc." \
+        -as mkisofs \
+        -l -J -R -V "OnlyDocker-v0.1" \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -b boot/isolinux/isolinux.bin -c boot/isolinux/boot.cat \
+        -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
+        -o /only-docker.iso $(pwd)
